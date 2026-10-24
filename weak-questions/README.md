@@ -2,9 +2,11 @@ Practice dashboard of 54 questions Johan keeps getting wrong, laid out as a card
 
 Double-click a card to copy the question, exhibit, and options as plain text; a "Qn copied" toast confirms the copy.
 
-The top bar has a card size switch (100 / 75 / 50%), and the explanation panel header has its own 100 / 75 / 50% size switch; both are remembered in localStorage, so more cards fit in a narrow browser side panel.
+The explanation panel always takes half the page: half the width on wide screens, and half the height as a bottom sheet on narrow ones. Smooth sliders set card size (40–100%) and panel text size (50–130%), and both are remembered in localStorage.
 
-![Narrow side panel at 50% card size, explanation panel open](screenshots/sidepanel-540-cards-50-panel.png)
+![Narrow side panel, half-height explanation sheet and size sliders](screenshots/sidepanel-540-sliders.png)
+
+![Wide layout, half-width explanation panel and size sliders](screenshots/wide-1920x1080-sliders.png)
 
 ![Wide layout, explanation panel open](screenshots/wide-1920x1080-panel-open.png)
 

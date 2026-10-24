@@ -13,7 +13,7 @@
   --sans:"Helvetica Neue","Avenir Next",Arial,system-ui,sans-serif;
   --cond:"Oswald","Bebas Neue","Arial Narrow","Roboto Condensed","Helvetica Neue",Arial,sans-serif;
   --mono:"IBM Plex Mono","JetBrains Mono","SF Mono",Menlo,Consolas,"DejaVu Sans Mono",ui-monospace,monospace;
-  --pw:clamp(380px,36vw,640px);
+  --pw:calc(50vw - 40px);
 }
 *{box-sizing:border-box}
 html,body{margin:0;color:var(--ink);font-family:var(--body);background:var(--cream)}
@@ -46,7 +46,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .bar .count{font-family:var(--mono);font-size:12px;color:#cfc4ae}
 
 /* layout */
-.wrap{max-width:1880px;margin:0 auto;padding:18px 28px 60px;display:grid;grid-template-columns:minmax(0,1fr) var(--pw);gap:24px;align-items:start}
+.wrap{max-width:none;margin:0 auto;padding:18px 28px 60px;display:grid;grid-template-columns:minmax(0,1fr) var(--pw);gap:24px;align-items:start}
 body.pclosed .wrap{grid-template-columns:minmax(0,1fr)}
 body.pclosed .panel{display:none}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:26px 22px;align-items:start}
@@ -122,13 +122,13 @@ pre.code.ex{border-left:4px solid var(--mustard)}
 .pempty .qn{display:block;font-size:80px;color:var(--terra);margin-bottom:10px}
 
 /* responsive */
-@media (max-width:1300px){:root{--pw:clamp(360px,40vw,520px)} .grid{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}}
+@media (max-width:1300px){.grid{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}}
 @media (max-width:900px){
   .wrap{grid-template-columns:minmax(0,1fr);padding:14px 14px 50px}
-  .panel{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:68vh;z-index:30;border-left:0;border-top:3px double var(--ink);box-shadow:0 -10px 30px rgba(0,0,0,.3)}
+  .panel{position:fixed;left:0;right:0;bottom:0;top:auto;height:50vh;max-height:50vh;z-index:30;border-left:0;border-top:3px double var(--ink);box-shadow:0 -10px 30px rgba(0,0,0,.3)}
   .mast{margin-top:0;padding:12px 16px 8px} .mast .stamp{display:none} .mast .kick span:nth-child(2){display:none}
-  .panel{background:var(--paper);max-height:60vh} .bar .count{display:none}
-  body:not(.pclosed) .wrap{padding-bottom:62vh}
+  .panel{background:var(--paper);height:50vh;max-height:50vh} .bar .count{display:none}
+  body:not(.pclosed) .wrap{padding-bottom:52vh}
   .bar{padding:8px 12px}
   .grid{grid-template-columns:minmax(0,1fr);gap:22px}
 }
@@ -155,13 +155,15 @@ pre.code{background:#151311;box-shadow:inset 0 0 0 1px #3a352e}
 
 /* card size */
 .grid{zoom:var(--cz,1)}
-body.z75 .grid,body.z50 .grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+body.zsm .grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
 .seg.zoom .ib{font-family:var(--mono);font-size:11.5px;padding:6px 7px;min-width:30px;justify-content:center}
 
 .panel .pb{zoom:var(--pzz,1)}
-.ph .tools .pz{display:inline-flex;border:1px solid var(--rule);border-radius:7px;padding:1px;margin-right:4px}
-.ph .tools .pz .ib{font-family:var(--mono);font-size:11px;padding:4px 6px;min-width:26px;justify-content:center}
-.ph .tools .pz .ib.on{background:var(--mustard);color:#1d1b18}
+.rng{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px}
+.rng input[type=range]{width:110px;accent-color:var(--mustard,#e8b84a);cursor:pointer}
+.rng .v{min-width:34px;text-align:right}
+.ph .tools .rng{margin-right:6px;color:var(--ink2)}
+.ph .tools .rng input[type=range]{width:90px}
 </style>
 </head>
 <body>
@@ -212,11 +214,7 @@ body.z75 .grid,body.z50 .grid{grid-template-columns:repeat(auto-fill,minmax(280p
     <button class="ib" id="shuffle" title="Shuffle"><svg class="i"><use href="#i-shuffle"/></svg></button>
     <button class="ib" id="order" title="Back to number order"><svg class="i"><use href="#i-sort"/></svg></button>
   </div>
-  <div class="seg zoom" title="Card size">
-    <button class="ib" data-z="100" title="Cards 100%">100</button>
-    <button class="ib" data-z="75" title="Cards 75%">75</button>
-    <button class="ib" data-z="50" title="Cards 50%">50</button>
-  </div>
+  <label class="rng" title="Card size"><svg class="i"><use href="#i-grid"/></svg><input type="range" id="czr" min="40" max="100" step="5" aria-label="Card size"><span class="v" id="czv"></span></label>
   <button class="ib" id="practice" title="Practice mode: hide answers until you pick"><svg class="i"><use href="#i-eye"/></svg></button>
   <button class="ib" id="reset" title="Reset progress"><svg class="i"><use href="#i-reset"/></svg></button>
   <button class="ib" id="ptoggle" title="Toggle explanation panel"><svg class="i"><use href="#i-panel"/></svg></button>
@@ -323,7 +321,7 @@ function renderPanel() {
   const ansTxt = q.ans.map(a => `<li><button class="opt ok" tabindex="-1"><span class="l">${a}</span><span class="tx">${q.opts[a.charCodeAt(0) - 65].includes("\n") ? codeBox(q.opts[a.charCodeAt(0) - 65], "hcl") : esc(q.opts[a.charCodeAt(0) - 65])}</span></button></li>`).join("");
   const blocks = q.blocks.map(([lang, code]) => `<div class="blab">${icon(lang === "hcl" ? "hcl" : "term")}${lang === "hcl" ? "HCL" : "Terminal"}</div>${codeBox(code, lang)}`).join("");
   p.innerHTML = `<div class="ph">${headHTML(q)}<div class="tools">
-      <span class="pz" title="Panel text size">${[100,75,50].map(z => `<button class="ib${(+S.pzoom||100) === z ? " on" : ""}" data-pz="${z}" title="Panel ${z}%">${z}</button>`).join("")}</span>
+      <label class="rng" title="Panel text size"><input type="range" data-pzr="1" min="50" max="130" step="5" value="${+S.pzoom || 100}" aria-label="Panel text size"><span class="v">${+S.pzoom || 100}%</span></label>
       <button class="ib${S.mastered[q.n] ? " on" : ""}" data-master="${q.n}" title="Toggle mastered">${icon("star")}</button>
       <button class="ib" data-close="1" title="Collapse panel">${icon("panel")}</button></div></div>
     <div class="pb">
@@ -351,12 +349,12 @@ function renderBar() {
   document.getElementById("practice").classList.toggle("on", S.practice);
   document.getElementById("ptoggle").classList.toggle("on", S.panelOpen);
   document.body.classList.toggle("pclosed", !S.panelOpen);
-  const z = [100, 75, 50].includes(+S.zoom) ? +S.zoom : 100;
+  const z = Math.min(100, Math.max(40, +S.zoom || 100));
   document.body.style.setProperty("--cz", z / 100);
-  document.body.classList.toggle("z75", z === 75); document.body.classList.toggle("z50", z === 50);
-  const pz = [100, 75, 50].includes(+S.pzoom) ? +S.pzoom : 100;
+  document.body.classList.toggle("zsm", z < 100);
+  const pz = Math.min(130, Math.max(50, +S.pzoom || 100));
   document.body.style.setProperty("--pzz", pz / 100);
-  document.querySelectorAll("[data-z]").forEach(b => b.classList.toggle("on", +b.dataset.z === z));
+  const czr = document.getElementById("czr"); if (czr) { czr.value = z; document.getElementById("czv").textContent = z + "%"; }
   document.getElementById("topic").value = S.topic;
   document.getElementById("issueMeta").textContent = `${QS.length} questions · ${Object.keys(TOPICS).length} topics`;
 }
@@ -454,19 +452,13 @@ document.addEventListener("dblclick", e => {
   });
 });
 
-document.addEventListener("click", e => {
-  const b = e.target.closest && e.target.closest("[data-z]");
-  if (!b) return;
-  S.zoom = +b.dataset.z; save(); renderBar();
-});
 
-document.addEventListener("click", e => {
-  const b = e.target.closest && e.target.closest("[data-pz]");
-  if (!b) return;
-  e.stopPropagation();
-  S.pzoom = +b.dataset.pz; save(); renderBar();
-  document.querySelectorAll("[data-pz]").forEach(x => x.classList.toggle("on", +x.dataset.pz === S.pzoom));
-}, true);
+
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.id === "czr") { S.zoom = +t.value; save(); renderBar(); }
+  else if (t.dataset && t.dataset.pzr) { S.pzoom = +t.value; t.nextElementSibling.textContent = t.value + "%"; save(); renderBar(); }
+});
 </script>
 </body>
 </html>
