@@ -152,6 +152,11 @@ pre.code{background:#151311;box-shadow:inset 0 0 0 1px #3a352e}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1d1b18;color:#ece3d0;border:1px solid #e2825d;padding:9px 16px;border-radius:999px;font-family:var(--sans);font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:100}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .card.copied{outline:2px solid var(--mustard);outline-offset:3px}
+
+/* card size */
+.grid{zoom:var(--cz,1)}
+body.z75 .grid,body.z50 .grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.seg.zoom .ib{font-family:var(--mono);font-size:11.5px;padding:6px 7px;min-width:30px;justify-content:center}
 </style>
 </head>
 <body>
@@ -202,6 +207,11 @@ pre.code{background:#151311;box-shadow:inset 0 0 0 1px #3a352e}
     <button class="ib" id="shuffle" title="Shuffle"><svg class="i"><use href="#i-shuffle"/></svg></button>
     <button class="ib" id="order" title="Back to number order"><svg class="i"><use href="#i-sort"/></svg></button>
   </div>
+  <div class="seg zoom" title="Card size">
+    <button class="ib" data-z="100" title="Cards 100%">100</button>
+    <button class="ib" data-z="75" title="Cards 75%">75</button>
+    <button class="ib" data-z="50" title="Cards 50%">50</button>
+  </div>
   <button class="ib" id="practice" title="Practice mode: hide answers until you pick"><svg class="i"><use href="#i-eye"/></svg></button>
   <button class="ib" id="reset" title="Reset progress"><svg class="i"><use href="#i-reset"/></svg></button>
   <button class="ib" id="ptoggle" title="Toggle explanation panel"><svg class="i"><use href="#i-panel"/></svg></button>
@@ -219,7 +229,7 @@ const TAPES = ["rgba(224,169,46,.55)","rgba(111,159,200,.5)","rgba(63,127,95,.45
 const KEY = "tf004-weak-spots-v1";
 const byN = Object.fromEntries(QS.map(q => [q.n, q]));
 const L = i => String.fromCharCode(65 + i);
-let S = {mastered:{}, wrong:{}, panelOpen:true, practice:true, filter:"all", topic:"", sel:null};
+let S = {mastered:{}, wrong:{}, panelOpen:true, practice:true, filter:"all", topic:"", sel:null, zoom:100};
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 const session = {};           // n -> {picked:[], done:bool, ok:bool, revealed:bool}
@@ -335,6 +345,10 @@ function renderBar() {
   document.getElementById("practice").classList.toggle("on", S.practice);
   document.getElementById("ptoggle").classList.toggle("on", S.panelOpen);
   document.body.classList.toggle("pclosed", !S.panelOpen);
+  const z = [100, 75, 50].includes(+S.zoom) ? +S.zoom : 100;
+  document.body.style.setProperty("--cz", z / 100);
+  document.body.classList.toggle("z75", z === 75); document.body.classList.toggle("z50", z === 50);
+  document.querySelectorAll("[data-z]").forEach(b => b.classList.toggle("on", +b.dataset.z === z));
   document.getElementById("topic").value = S.topic;
   document.getElementById("issueMeta").textContent = `${QS.length} questions · ${Object.keys(TOPICS).length} topics`;
 }
@@ -430,6 +444,12 @@ document.addEventListener("dblclick", e => {
     toast(`Q${q.n} copied`);
     card.classList.add("copied"); setTimeout(() => card.classList.remove("copied"), 700);
   });
+});
+
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-z]");
+  if (!b) return;
+  S.zoom = +b.dataset.z; save(); renderBar();
 });
 </script>
 </body>
