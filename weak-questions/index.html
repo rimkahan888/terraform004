@@ -157,6 +157,11 @@ pre.code{background:#151311;box-shadow:inset 0 0 0 1px #3a352e}
 .grid{zoom:var(--cz,1)}
 body.z75 .grid,body.z50 .grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
 .seg.zoom .ib{font-family:var(--mono);font-size:11.5px;padding:6px 7px;min-width:30px;justify-content:center}
+
+.panel .pb{zoom:var(--pzz,1)}
+.ph .tools .pz{display:inline-flex;border:1px solid var(--rule);border-radius:7px;padding:1px;margin-right:4px}
+.ph .tools .pz .ib{font-family:var(--mono);font-size:11px;padding:4px 6px;min-width:26px;justify-content:center}
+.ph .tools .pz .ib.on{background:var(--mustard);color:#1d1b18}
 </style>
 </head>
 <body>
@@ -229,7 +234,7 @@ const TAPES = ["rgba(224,169,46,.55)","rgba(111,159,200,.5)","rgba(63,127,95,.45
 const KEY = "tf004-weak-spots-v1";
 const byN = Object.fromEntries(QS.map(q => [q.n, q]));
 const L = i => String.fromCharCode(65 + i);
-let S = {mastered:{}, wrong:{}, panelOpen:true, practice:true, filter:"all", topic:"", sel:null, zoom:100};
+let S = {mastered:{}, wrong:{}, panelOpen:true, practice:true, filter:"all", topic:"", sel:null, zoom:100, pzoom:100};
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 const session = {};           // n -> {picked:[], done:bool, ok:bool, revealed:bool}
@@ -318,6 +323,7 @@ function renderPanel() {
   const ansTxt = q.ans.map(a => `<li><button class="opt ok" tabindex="-1"><span class="l">${a}</span><span class="tx">${q.opts[a.charCodeAt(0) - 65].includes("\n") ? codeBox(q.opts[a.charCodeAt(0) - 65], "hcl") : esc(q.opts[a.charCodeAt(0) - 65])}</span></button></li>`).join("");
   const blocks = q.blocks.map(([lang, code]) => `<div class="blab">${icon(lang === "hcl" ? "hcl" : "term")}${lang === "hcl" ? "HCL" : "Terminal"}</div>${codeBox(code, lang)}`).join("");
   p.innerHTML = `<div class="ph">${headHTML(q)}<div class="tools">
+      <span class="pz" title="Panel text size">${[100,75,50].map(z => `<button class="ib${(+S.pzoom||100) === z ? " on" : ""}" data-pz="${z}" title="Panel ${z}%">${z}</button>`).join("")}</span>
       <button class="ib${S.mastered[q.n] ? " on" : ""}" data-master="${q.n}" title="Toggle mastered">${icon("star")}</button>
       <button class="ib" data-close="1" title="Collapse panel">${icon("panel")}</button></div></div>
     <div class="pb">
@@ -348,6 +354,8 @@ function renderBar() {
   const z = [100, 75, 50].includes(+S.zoom) ? +S.zoom : 100;
   document.body.style.setProperty("--cz", z / 100);
   document.body.classList.toggle("z75", z === 75); document.body.classList.toggle("z50", z === 50);
+  const pz = [100, 75, 50].includes(+S.pzoom) ? +S.pzoom : 100;
+  document.body.style.setProperty("--pzz", pz / 100);
   document.querySelectorAll("[data-z]").forEach(b => b.classList.toggle("on", +b.dataset.z === z));
   document.getElementById("topic").value = S.topic;
   document.getElementById("issueMeta").textContent = `${QS.length} questions · ${Object.keys(TOPICS).length} topics`;
@@ -451,6 +459,14 @@ document.addEventListener("click", e => {
   if (!b) return;
   S.zoom = +b.dataset.z; save(); renderBar();
 });
+
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-pz]");
+  if (!b) return;
+  e.stopPropagation();
+  S.pzoom = +b.dataset.pz; save(); renderBar();
+  document.querySelectorAll("[data-pz]").forEach(x => x.classList.toggle("on", +x.dataset.pz === S.pzoom));
+}, true);
 </script>
 </body>
 </html>
