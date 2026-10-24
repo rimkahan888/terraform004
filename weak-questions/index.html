@@ -148,6 +148,10 @@ pre.code{background:#151311;box-shadow:inset 0 0 0 1px #3a352e}
 .chip{color:#a9cdee}
 .empty{background:rgba(36,33,29,.95)}
 @media (max-width:900px){.panel{background:#1e1b18}}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1d1b18;color:#ece3d0;border:1px solid #e2825d;padding:9px 16px;border-radius:999px;font-family:var(--sans);font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.card.copied{outline:2px solid var(--mustard);outline-offset:3px}
 </style>
 </head>
 <body>
@@ -278,7 +282,7 @@ function headHTML(q) {
 }
 function cardHTML(q, idx) {
   const tilt = ((q.n * 37) % 9 - 4) * 0.25, tape = ((q.n * 13) % 11 - 5);
-  return `<article class="card${S.sel === q.n ? " sel" : ""}${S.mastered[q.n] ? " mastered" : ""}" id="q${q.n}" data-n="${q.n}" style="--tilt:${tilt}deg;--tape:${tape}deg;--tapec:${TAPES[q.n % 4]}">
+  return `<article title="Double-click to copy this question" class="card${S.sel === q.n ? " sel" : ""}${S.mastered[q.n] ? " mastered" : ""}" id="q${q.n}" data-n="${q.n}" style="--tilt:${tilt}deg;--tape:${tape}deg;--tapec:${TAPES[q.n % 4]}">
     <div class="chead">${headHTML(q)}</div>
     <p class="qtext">${esc(q.q)}</p>
     ${q.ex ? codeBox(q.ex, null, "ex") : ""}
@@ -389,6 +393,44 @@ sel.innerHTML = `<option value="">All topics</option>` + Object.entries(TOPICS).
 sel.addEventListener("change", () => { S.topic = sel.value; save(); renderGrid(); });
 if (S.sel && !byN[S.sel]) S.sel = null;
 renderAll();
+
+// double-click a card to copy the question as plain text
+function qPlain(q) {
+  const lines = [`Terraform Associate 004 - Q${q.n} (${q.type})`, "", q.q];
+  if (q.ex) lines.push("", q.ex);
+  lines.push("");
+  q.opts.forEach((o, i) => lines.push(o.includes("\n") ? `${L(i)}.\n${o}` : `${L(i)}. ${o}`));
+  return lines.join("\n");
+}
+function copyText(txt) {
+  if (navigator.clipboard && window.isSecureContext !== false) {
+    return navigator.clipboard.writeText(txt).catch(() => legacyCopy(txt));
+  }
+  return Promise.resolve(legacyCopy(txt));
+}
+function legacyCopy(txt) {
+  const ta = document.createElement("textarea");
+  ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); } finally { ta.remove(); }
+}
+let toastT;
+function toast(msg) {
+  let t = document.getElementById("toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 1600);
+}
+document.addEventListener("dblclick", e => {
+  const card = e.target.closest && e.target.closest(".card");
+  if (!card) return;
+  const q = byN[card.dataset.n]; if (!q) return;
+  const sel = window.getSelection && window.getSelection(); if (sel) sel.removeAllRanges();
+  copyText(qPlain(q)).then(() => {
+    toast(`Q${q.n} copied`);
+    card.classList.add("copied"); setTimeout(() => card.classList.remove("copied"), 700);
+  });
+});
 </script>
 </body>
 </html>
