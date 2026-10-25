@@ -8,6 +8,8 @@ The explanation panel always takes half the page: half the width on wide screens
 
 The explanation panel no longer repeats the question: it shows a compact header, a green answer line, then the explanation. The selected card shows an "IN PANEL" tag with a glow.
 
+The panel has Explain and Simulate tabs. Simulate is a step-by-step terminal simulation for every question. The chosen tab is remembered, and E/S or the arrow keys switch tabs while focus is in the panel.
+
 ![Narrow side panel, half-height explanation sheet and size sliders](screenshots/sidepanel-540-sliders.png)
 
 ![Wide layout, half-width explanation panel and size sliders](screenshots/wide-1920x1080-sliders.png)
