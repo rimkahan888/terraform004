@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='13' fill='%231d1b18'/><path fill='%23e8b84a' d='M8 14h10v8h5v-8h8v8h5v-8h8v8h5v-8h7v34H8z'/><path fill='%231d1b18' d='M26 48V38a6 6 0 0 1 12 0v10z'/><rect x='8' y='48' width='48' height='6' fill='%23c4623f'/></svg>">
 <title>Terraform 004 · The Weak Spots Issue</title>
 <style>
 :root{
@@ -151,7 +152,19 @@ pre.code{background:#151311;box-shadow:inset 0 0 0 1px #3a352e}
 
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1d1b18;color:#ece3d0;border:1px solid #e2825d;padding:9px 16px;border-radius:999px;font-family:var(--sans);font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:100}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.card.copied{outline:2px solid var(--mustard);outline-offset:3px}
+.card.copied{outline:3px solid #4fbf7a;outline-offset:3px;animation:cpulse .6s ease-out}
+.card.copyfail{outline:3px solid #e0524a;outline-offset:3px;animation:cshake .4s ease-out}
+@keyframes cpulse{0%{box-shadow:0 0 0 0 rgba(79,191,122,.75)}100%{box-shadow:0 0 0 22px rgba(79,191,122,0)}}
+@keyframes cshake{0%,100%{translate:0}25%{translate:-5px}75%{translate:5px}}
+.cbadge{position:absolute;top:10px;right:10px;z-index:5;display:flex;align-items:center;gap:6px;padding:6px 12px 6px 8px;border-radius:999px;font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:.03em;color:#fff;background:#2f9e5c;box-shadow:0 6px 18px rgba(0,0,0,.45),0 0 0 2px rgba(255,255,255,.15) inset;pointer-events:none;animation:bpop .35s cubic-bezier(.2,1.6,.4,1) both}
+.cbadge.err{background:#c8392f}
+.cbadge svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.cbadge.out{animation:bout .25s ease-in forwards}
+@keyframes bpop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+@keyframes bout{to{opacity:0;transform:scale(.8)}}
+.toast.ok{border-color:#4fbf7a;background:#16301f;color:#d8f5e2}
+.toast.err{border-color:#e0524a;background:#3a1714;color:#ffd9d4}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* card size */
 .grid{zoom:var(--cz,1)}
@@ -422,34 +435,56 @@ function qPlain(q) {
   q.opts.forEach((o, i) => lines.push(o.includes("\n") ? `${L(i)}.\n${o}` : `${L(i)}. ${o}`));
   return lines.join("\n");
 }
+// resolves true only when the copy is confirmed; false otherwise
 function copyText(txt) {
-  if (navigator.clipboard && window.isSecureContext !== false) {
-    return navigator.clipboard.writeText(txt).catch(() => legacyCopy(txt));
+  if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext !== false) {
+    return navigator.clipboard.writeText(txt).then(() => true, () => legacyCopy(txt));
   }
   return Promise.resolve(legacyCopy(txt));
 }
 function legacyCopy(txt) {
   const ta = document.createElement("textarea");
-  ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+  ta.value = txt; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
   document.body.appendChild(ta); ta.select();
-  try { document.execCommand("copy"); } finally { ta.remove(); }
+  let ok = false;
+  try { ok = document.execCommand("copy") === true; } catch (_) { ok = false; } finally { ta.remove(); }
+  return ok;
 }
 let toastT;
-function toast(msg) {
+function toast(msg, kind) {
   let t = document.getElementById("toast");
-  if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); }
-  t.textContent = msg; t.classList.add("show");
-  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 1600);
+  if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; t.setAttribute("aria-hidden", "true"); document.body.appendChild(t); }
+  t.textContent = msg; t.className = "toast show" + (kind ? " " + kind : "");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), kind === "err" ? 3200 : 1800);
+}
+function announce(msg) {
+  let r = document.getElementById("copylive");
+  if (!r) { r = document.createElement("div"); r.id = "copylive"; r.className = "sr"; r.setAttribute("role", "status"); r.setAttribute("aria-live", "polite"); document.body.appendChild(r); }
+  r.textContent = ""; setTimeout(() => { r.textContent = msg; }, 30);
+}
+function copyFeedback(n, ok) {
+  const card = document.getElementById("q" + n);
+  const msg = ok ? `✓ Q${n} copied to clipboard` : "✕ Copy failed, select the text manually";
+  toast(msg, ok ? "ok" : "err"); announce(msg);
+  if (!card) return;
+  card.querySelectorAll(".cbadge").forEach(b => b.remove());
+  card.classList.remove("copied", "copyfail"); void card.offsetWidth;
+  card.classList.add(ok ? "copied" : "copyfail");
+  const b = document.createElement("div");
+  b.className = "cbadge" + (ok ? "" : " err"); b.setAttribute("aria-hidden", "true");
+  b.innerHTML = ok ? `<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Copied`
+                   : `<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>Copy failed`;
+  card.appendChild(b);
+  const life = ok ? 1500 : 2600;
+  clearTimeout(card._cbT);
+  card._cbT = setTimeout(() => { b.classList.add("out"); card.classList.remove("copied", "copyfail"); setTimeout(() => b.remove(), 260); }, life);
 }
 document.addEventListener("dblclick", e => {
   const card = e.target.closest && e.target.closest(".card");
   if (!card) return;
   const q = byN[card.dataset.n]; if (!q) return;
   const sel = window.getSelection && window.getSelection(); if (sel) sel.removeAllRanges();
-  copyText(qPlain(q)).then(() => {
-    toast(`Q${q.n} copied`);
-    card.classList.add("copied"); setTimeout(() => card.classList.remove("copied"), 700);
-  });
+  copyText(qPlain(q)).then(ok => copyFeedback(q.n, ok), () => copyFeedback(q.n, false));
 });
 
 
