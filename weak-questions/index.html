@@ -94,7 +94,9 @@ pre.code.ex{border-left:4px solid var(--mustard)}
 /* panel */
 .panel{position:sticky;top:58px;max-height:calc(100vh - 74px);overflow:auto;background:rgba(236,227,207,.98);border-left:3px double var(--ink);box-shadow:0 10px 28px rgba(60,40,10,.2);padding:0 0 30px}
 .ph{position:sticky;top:0;z-index:2;background:var(--paper);display:flex;align-items:center;gap:10px;padding:12px 18px 10px;border-bottom:1px solid var(--ink)}
-.ph .qn{font-size:52px}
+.ph{padding:8px 14px 7px}
+.ph .qn{font-size:30px}
+.ph .badges{margin-left:auto}
 .ph .kicks{gap:4px}
 .ph .tools{display:flex;gap:4px}
 .ph .tools .ib{color:var(--ink)}
@@ -165,6 +167,20 @@ pre.code{background:#151311;box-shadow:inset 0 0 0 1px #3a352e}
 .toast.ok{border-color:#4fbf7a;background:#16301f;color:#d8f5e2}
 .toast.err{border-color:#e0524a;background:#3a1714;color:#ffd9d4}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+
+/* panel: answer line instead of repeating the question */
+.ansline{margin:4px 0 14px;padding:10px 12px;border:1px solid #4fbf7a;border-left:5px solid #4fbf7a;border-radius:6px;background:rgba(79,191,122,.10);font-family:var(--sans);font-size:15px;line-height:1.4;display:flex;flex-direction:column;gap:6px}
+.ansline .albl{display:flex;align-items:center;gap:6px;font-variant:small-caps;letter-spacing:.14em;font-size:12.5px;font-weight:700;color:#7fd6a0}
+.ansline .aitem{color:var(--ink)}
+.ansline .al{color:#7fd6a0;margin-right:2px}
+.ansline .aitem.code pre.code{margin:4px 0 0}
+/* selected card: stronger highlight so the panel's owner is obvious */
+.card.sel{outline:3px solid #e2825d;outline-offset:3px;box-shadow:0 0 0 7px rgba(226,130,93,.28),0 0 34px rgba(226,130,93,.45),0 10px 22px rgba(0,0,0,.35)}
+.card.sel::after{content:"\25B8  In panel";position:absolute;right:10px;bottom:-11px;padding:3px 10px;border-radius:999px;background:#e2825d;color:#1d1b18;font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 3px 10px rgba(0,0,0,.4)}
+body.pclosed .card.sel::after{display:none}
+.card.sel.copied{outline-color:#4fbf7a}
+.card.sel.copyfail{outline-color:#e0524a}
 
 /* card size */
 .grid{zoom:var(--cz,1)}
@@ -331,19 +347,15 @@ function renderPanel() {
   if (!q) { p.innerHTML = `<div class="pempty"><span class="qn">${QS.length}</span>questions I keep getting wrong.<br>Pick a card to open its story.</div>`; return; }
   const s = st(q.n), show = !S.practice || s.done || s.revealed;
   const sents = q.why.split(/(?<=\.)\s/); const take = sents[0].length < 40 && sents[1] ? sents[0] + " " + sents[1] : sents[0];
-  const ansTxt = q.ans.map(a => `<li><button class="opt ok" tabindex="-1"><span class="l">${a}</span><span class="tx">${q.opts[a.charCodeAt(0) - 65].includes("\n") ? codeBox(q.opts[a.charCodeAt(0) - 65], "hcl") : esc(q.opts[a.charCodeAt(0) - 65])}</span></button></li>`).join("");
+  const ansTxt = q.ans.map(a => { const o = q.opts[a.charCodeAt(0) - 65]; return o.includes("\n") ? `<div class="aitem code"><b class="al">${a}.</b>${codeBox(o, "hcl")}</div>` : `<div class="aitem"><b class="al">${a}.</b> <span>${esc(o)}</span></div>`; }).join("");
   const blocks = q.blocks.map(([lang, code]) => `<div class="blab">${icon(lang === "hcl" ? "hcl" : "term")}${lang === "hcl" ? "HCL" : "Terminal"}</div>${codeBox(code, lang)}`).join("");
   p.innerHTML = `<div class="ph">${headHTML(q)}<div class="tools">
       <label class="rng" title="Panel text size"><input type="range" data-pzr="1" min="50" max="130" step="5" value="${+S.pzoom || 100}" aria-label="Panel text size"><span class="v">${+S.pzoom || 100}%</span></label>
       <button class="ib${S.mastered[q.n] ? " on" : ""}" data-master="${q.n}" title="Toggle mastered">${icon("star")}</button>
       <button class="ib" data-close="1" title="Collapse panel">${icon("panel")}</button></div></div>
     <div class="pb">
-      <p class="qtext">${esc(q.q)}</p>
-      ${q.ex ? codeBox(q.ex, null, "ex") : ""}
-      <ol class="opts">${q.opts.map((_, i) => optHTML(q, i, "panel")).join("")}</ol>
-      <div class="cfoot">${footHTML(q, "panel")}</div>
       ${show ? `
-      <div class="sec"><h3>${icon("check")}Answer</h3><ol class="opts answer">${ansTxt}</ol></div>
+      <div class="ansline" role="note"><span class="albl">${icon("check")}${q.ans.length > 1 ? "Answers" : "Answer"}</span>${ansTxt}</div>
       <blockquote class="pull">${esc(take)}</blockquote>
       <div class="sec"><h3>${icon("book")}Why</h3><p class="expl">${esc(q.why)}</p></div>
       <div class="sec"><h3>${icon("x")}Why not the others</h3><ul class="wrongs">${Object.entries(q.wrong).map(([l, t]) => `<li><span class="l">${l}</span><span>${esc(t)}</span></li>`).join("")}</ul></div>

@@ -6,6 +6,8 @@ The page has a favicon. A successful double-click copy shows a green "✓ Copied
 
 The explanation panel always takes half the page: half the width on wide screens, and half the height as a bottom sheet on narrow ones. Smooth sliders set card size (40–100%) and panel text size (50–130%), and both are remembered in localStorage.
 
+The explanation panel no longer repeats the question: it shows a compact header, a green answer line, then the explanation. The selected card shows an "IN PANEL" tag with a glow.
+
 ![Narrow side panel, half-height explanation sheet and size sliders](screenshots/sidepanel-540-sliders.png)
 
 ![Wide layout, half-width explanation panel and size sliders](screenshots/wide-1920x1080-sliders.png)
