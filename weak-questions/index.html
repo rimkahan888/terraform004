@@ -225,6 +225,29 @@ body.zsm .grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
 .rng .v{min-width:34px;text-align:right}
 .ph .tools .rng{margin-right:6px;color:var(--ink2)}
 .ph .tools .rng input[type=range]{width:90px}
+
+/* simple mode: only the grid and the panel */
+body.simple .mast,body.simple .bar{display:none}
+body.simple .wrap{padding:14px 28px 40px 58px}
+@media (min-width:901px){body.simple .panel{top:12px;max-height:calc(100vh - 24px)}}
+.sfloat{display:none;position:fixed;left:10px;top:12px;z-index:45;flex-direction:column;gap:6px;font-family:var(--sans)}
+body.simple .sfloat{display:flex}
+.sfloat .fb{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #4a443b;border-radius:9px;background:rgba(29,27,24,.82);color:#c9bea8;padding:0;opacity:.62;transition:opacity .15s,background .15s,color .15s}
+.sfloat .fb:hover,.sfloat .fb:focus-visible,.sfloat .fb.on{opacity:1;background:#2c2823;color:#ece3d0}
+.sfloat .fb.on{border-color:#e8b84a}
+.sfloat .fb svg.i{width:16px;height:16px}
+.spop{position:absolute;left:42px;top:40px;display:none;align-items:center;gap:8px;background:#1d1b18;color:#ece3d0;border:1px solid #4a443b;border-radius:10px;padding:8px 10px;box-shadow:0 8px 24px rgba(0,0,0,.45);white-space:nowrap}
+.spop.open{display:flex}
+.spop .rng input[type=range]{width:120px}
+body.simple .grid{animation:sIn .28s ease}
+body.simple .panel{animation:sFade .28s ease}
+body.simple .sfloat{animation:sFade .28s ease both}
+body.unsimple .mast,body.unsimple .bar{animation:sDown .28s ease both}
+@keyframes sIn{from{opacity:.55;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@keyframes sFade{from{opacity:0}to{opacity:1}}
+@keyframes sDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+@media (max-width:900px){body.simple .wrap{padding:10px 12px 40px 54px} body.simple:not(.pclosed) .wrap{padding-bottom:52vh}}
+@media (prefers-reduced-motion:reduce){body.simple .grid,body.simple .panel,body.simple .sfloat,body.unsimple .mast,body.unsimple .bar{animation:none}.sfloat .fb{transition:none}}
 </style>
 </head>
 <body>
@@ -254,6 +277,8 @@ body.zsm .grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
  <symbol id="i-term" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></symbol>
  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-6a3 3 0 0 0-3 3"/><path d="M20 4v14h-7"/></symbol>
  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+ <symbol id="i-focus" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+ <symbol id="i-unfocus" viewBox="0 0 24 24"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></symbol>
  <symbol id="i-retry" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8M20 3v5h-5"/></symbol>
 </svg>
 
@@ -279,8 +304,15 @@ body.zsm .grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
   <label class="rng" title="Card size"><svg class="i"><use href="#i-grid"/></svg><input type="range" id="czr" min="40" max="100" step="5" aria-label="Card size"><span class="v" id="czv"></span></label>
   <button class="ib" id="practice" title="Practice mode: hide answers until you pick"><svg class="i"><use href="#i-eye"/></svg></button>
   <button class="ib" id="reset" title="Reset progress"><svg class="i"><use href="#i-reset"/></svg></button>
+  <button class="ib" id="simple" title="Simple mode: only cards and panel (M)" aria-label="Simple mode" aria-pressed="false"><svg class="i"><use href="#i-focus"/></svg></button>
   <button class="ib" id="ptoggle" title="Toggle explanation panel"><svg class="i"><use href="#i-panel"/></svg></button>
 </nav>
+
+<div class="sfloat" id="sfloat" role="group" aria-label="Simple mode controls">
+  <button class="fb" id="sexit" title="Exit simple mode (M)" aria-label="Exit simple mode"><svg class="i"><use href="#i-unfocus"/></svg></button>
+  <button class="fb" id="ssize" title="Card size" aria-label="Card size" aria-expanded="false" aria-controls="spop"><svg class="i"><use href="#i-grid"/></svg></button>
+  <div class="spop" id="spop"><label class="rng" title="Card size"><input type="range" id="czr2" min="40" max="100" step="5" aria-label="Card size"><span class="v" id="czv2"></span></label></div>
+</div>
 
 <div class="wrap">
   <main class="grid" id="grid"></main>
@@ -294,7 +326,7 @@ const TAPES = ["rgba(224,169,46,.55)","rgba(111,159,200,.5)","rgba(63,127,95,.45
 const KEY = "tf004-weak-spots-v1";
 const byN = Object.fromEntries(QS.map(q => [q.n, q]));
 const L = i => String.fromCharCode(65 + i);
-let S = {mastered:{}, wrong:{}, panelOpen:true, practice:true, filter:"all", topic:"", sel:null, zoom:100, pzoom:100, tab:"explain"};
+let S = {mastered:{}, wrong:{}, panelOpen:true, practice:true, filter:"all", topic:"", sel:null, zoom:100, pzoom:100, tab:"explain", simple:false};
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 const session = {};           // n -> {picked:[], done:bool, ok:bool, revealed:bool}
@@ -452,6 +484,10 @@ function renderBar() {
   const pz = Math.min(130, Math.max(50, +S.pzoom || 100));
   document.body.style.setProperty("--pzz", pz / 100);
   const czr = document.getElementById("czr"); if (czr) { czr.value = z; document.getElementById("czv").textContent = z + "%"; }
+  const czr2 = document.getElementById("czr2"); if (czr2) { czr2.value = z; document.getElementById("czv2").textContent = z + "%"; }
+  document.body.classList.toggle("simple", !!S.simple);
+  const sb = document.getElementById("simple"); sb.classList.toggle("on", !!S.simple); sb.setAttribute("aria-pressed", String(!!S.simple));
+  if (!S.simple) sizePop(false);
   document.getElementById("topic").value = S.topic;
   document.getElementById("issueMeta").textContent = `${QS.length} questions · ${Object.keys(TOPICS).length} topics`;
 }
@@ -501,10 +537,40 @@ document.addEventListener("click", e => {
   if (t.id === "shuffle") { for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } return renderGrid(); }
   if (t.id === "order") { order = QS.map(q => q.n); return renderGrid(); }
   if (t.id === "practice") { S.practice = !S.practice; save(); renderBar(); return renderPanel(); }
+  if (t.id === "simple" || t.id === "sexit") return setSimple(!S.simple);
+  if (t.id === "ssize") return sizePop(!document.getElementById("spop").classList.contains("open"));
   if (t.id === "ptoggle") { S.panelOpen = !S.panelOpen; save(); return renderBar(); }
   if (t.id === "reset") { if (confirm("Reset mastered flags and wrong counts?")) { S.mastered = {}; S.wrong = {}; save(); renderAll(); } return; }
   if (t.classList.contains("card")) select(+t.dataset.n);
 });
+function sizePop(open) {
+  const pop = document.getElementById("spop"), b = document.getElementById("ssize");
+  pop.classList.toggle("open", open); b.classList.toggle("on", open); b.setAttribute("aria-expanded", String(open));
+  if (open) document.getElementById("czr2").focus();
+}
+let unsT;
+function setSimple(on) {
+  S.simple = on; save();
+  document.body.classList.remove("unsimple");
+  if (!on) { document.body.classList.add("unsimple"); clearTimeout(unsT); unsT = setTimeout(() => document.body.classList.remove("unsimple"), 400); }
+  renderBar();
+  const f = document.activeElement;
+  if (on && f && f.id === "simple") document.getElementById("sexit").focus();
+  if (!on && f && f.closest && f.closest("#sfloat")) document.getElementById("simple").focus();
+  const msg = on ? "Simple mode on · press M to exit" : "Simple mode off · press M to turn it back on";
+  toast(msg); announce(msg);
+}
+// M toggles simple mode (not while typing, not with modifiers)
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  if (e.key.toLowerCase() !== "m") return;
+  const a = document.activeElement;
+  if (a && (/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName) || a.isContentEditable)) return;
+  e.preventDefault(); setSimple(!S.simple);
+});
+// click outside the size popover closes it
+document.addEventListener("pointerdown", e => { const pop = document.getElementById("spop"); if (pop.classList.contains("open") && !e.target.closest("#sfloat")) sizePop(false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && document.getElementById("spop").classList.contains("open")) { e.stopImmediatePropagation(); sizePop(false); document.getElementById("ssize").focus(); } }, true);
 document.addEventListener("keydown", e => { if (e.key === "Escape" && S.panelOpen) { S.panelOpen = false; save(); renderBar(); } });
 // panel tabs: Left/Right or E/S while focus is inside the panel (not while typing or on a slider)
 document.addEventListener("keydown", e => {
@@ -587,7 +653,7 @@ document.addEventListener("dblclick", e => {
 
 document.addEventListener("input", e => {
   const t = e.target;
-  if (t.id === "czr") { S.zoom = +t.value; save(); renderBar(); }
+  if (t.id === "czr" || t.id === "czr2") { S.zoom = +t.value; save(); renderBar(); }
   else if (t.dataset && t.dataset.pzr) { S.pzoom = +t.value; t.nextElementSibling.textContent = t.value + "%"; save(); renderBar(); }
 });
 </script>

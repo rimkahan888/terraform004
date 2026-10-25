@@ -10,6 +10,8 @@ The explanation panel no longer repeats the question: it shows a compact header,
 
 The panel has Explain and Simulate tabs. Simulate is a step-by-step terminal simulation for every question. The chosen tab is remembered, and E/S or the arrow keys switch tabs while focus is in the panel.
 
+Simple mode, toggled from the toolbar or with the M key, hides the headers and toolbar and leaves only the cards and the panel, with a small floating exit and card-size control. The choice is remembered.
+
 ![Narrow side panel, half-height explanation sheet and size sliders](screenshots/sidepanel-540-sliders.png)
 
 ![Wide layout, half-width explanation panel and size sliders](screenshots/wide-1920x1080-sliders.png)
